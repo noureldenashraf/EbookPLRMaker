@@ -30,15 +30,31 @@ public class FileController {
     }
 
     @DeleteMapping("/api/files")
-    ResponseEntity<?> deleteFileByID( @RequestParam(required = true,name = "fileId") Integer fileId){
-        return fileService.deleteFileWithId(fileId);
+    ResponseEntity<?> deleteFileByID (
+            @RequestParam(required = true,name = "fileId") Optional<Integer> fileId
+    )
+    {
+        if(fileId.isEmpty()){
+            throw new RuntimeException("Requested Parameter Not found");
+        }
+        return fileService.deleteFileWithId(fileId.get());
     }
 
     @PostMapping("/api/files")
     ResponseEntity<?> addFile (
             @RequestBody(required = true) File newFile
-    ){
+    )
+    {
         return fileService.addNewFile(newFile);
     }
+
+    @PutMapping("/api/files")
+    ResponseEntity<?> updateFile(
+            @RequestBody(required = true) File updateFile
+    )
+    {
+        return fileService.updateFile(updateFile);
+    }
+
 
 }

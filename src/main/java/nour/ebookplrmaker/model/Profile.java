@@ -2,6 +2,8 @@ package nour.ebookplrmaker.model;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Data
@@ -13,9 +15,11 @@ public class Profile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    @NonNull
+    @NotNull
+    @NotEmpty
     private String name;
-    @NonNull
+    @NotNull
+    @NotEmpty
     private String files;  // i will face a problem here since we will use fileIDS here so i will look at it later,mariadb don't have arrays
 
     @Override

@@ -2,6 +2,8 @@ package nour.ebookplrmaker.model;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Data
@@ -13,13 +15,17 @@ public class File {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    @NonNull
+    @NotEmpty
+    @NotNull
     private String name;
-    @NonNull
+    @NotEmpty
+    @NotNull
     private String prompt;
-    @NonNull
+    @NotEmpty
+    @NotNull
     private String type;
-    @NonNull
+    @NotEmpty
+    @NotNull
     private String folder;
 
     @Override

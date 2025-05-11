@@ -1,15 +1,12 @@
 package nour.ebookplrmaker.service;
 
 
-import lombok.NonNull;
-import nour.ebookplrmaker.controller.FileController;
 import nour.ebookplrmaker.model.File;
 import nour.ebookplrmaker.repository.FilesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -31,8 +28,11 @@ public class FileService {
 
     public ResponseEntity<?> deleteFileWithId(Integer fileId) {
 
-        Optional<File> tempFile = filesRepo.findById(fileId);
-        if (tempFile.isEmpty()) {
+//        Optional<File> tempFile = filesRepo.findById(fileId);
+//        if (tempFile.isEmpty()) {
+//            throw new RuntimeException("File with id : " + fileId + " Not Found");
+//        }
+        if (!filesRepo.existsById(fileId)) { // much better than the above one i believe and less complicated
             throw new RuntimeException("File with id : " + fileId + " Not Found");
         }
         filesRepo.deleteById(fileId);
@@ -40,25 +40,36 @@ public class FileService {
 
     }
 
-    public ResponseEntity<?> getFileByID (Integer fileId) {
+    public ResponseEntity<?> getFileByID(Integer fileId) {
         Optional<File> searchedFile = filesRepo.findById(fileId);
-        if(searchedFile.isEmpty()){
+        if (searchedFile.isEmpty()) {
             throw new RuntimeException("File with id : " + fileId + " Not Found");
         }
         return ResponseEntity.accepted().body(searchedFile.get());
     }
 
 
-    public ResponseEntity<?> addNewFile (File newFile) {
-        if (filesRepo.findById(newFile.getId()).isPresent()){ // in case if the body is sent with ID
+    public ResponseEntity<?> addNewFile(File newFile) {
+        if (newFile.getId() != 0) { // in case if the body is sent with ID
             newFile.setId(0);
         }
-            try {
-                return ResponseEntity.accepted().body(filesRepo.save(newFile));
-            }
-            catch (RuntimeException e){
-                throw new RuntimeException("Can't save File");
-            }
+        try {
+            return ResponseEntity.accepted().body(filesRepo.save(newFile));
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Can't save File");
+        }
+    }
+
+    public ResponseEntity<?> updateFile(File updateFile) {
+        if (!filesRepo.existsById(updateFile.getId())) {
+            throw new RuntimeException("File with id " + updateFile.getId() + " Doesn't exist");
+        }
+        try {
+            return ResponseEntity.accepted().body(filesRepo.save(updateFile));
+        }
+        catch (RuntimeException e){
+            throw new RuntimeException("Couldn't process the Transaction");
         }
 
+    }
 }
