@@ -56,5 +56,11 @@ public class FileController {
         return fileService.updateFile(updateFile);
     }
 
+    @PostMapping("/api/files/generate")
+    ResponseEntity<?> generateFiles
+     (
+
+    )
+
 
 }
