@@ -97,39 +97,62 @@ public class FileService {
             if(file.isEmpty()){
                 throw new RuntimeException("File with id : " + requestDetails.getFileIds() + " Not Found");
             }
-            if (!fileTypeAndNormalization.contains(file.get().getType())){ // already took care of it in adding but just in case
+            if (!fileTypeAndNormalization.containsKey(file.get().getType())){ //TODO
+                // already took care of it in adding but just in case
                 throw new RuntimeException("File type "+file.get().getType()+" Not supported");
             }
-                return openAiService.generateContent(requestDetails.getContext(),file.get().getPrompt(),fileTypeAndNormalization.get(file.get().getType()));
+
+                return openAiService
+                        .generateContent
+                                (
+                                 requestDetails.getContext(),file.get().getPrompt(),fileTypeAndNormalization.get(file.get().getType())
+                                );
         }
+
  //        else means that we will generate multiple ones
         //  using @hashTable to carry all the filesIds and there Generated content
         Hashtable<String,ResponseEntity<?>> fileIdAndGeneratedContent = new Hashtable<>();
+        StringBuilder id = new StringBuilder();
         for (char c:requestDetails.getFileIds().toCharArray()) {
-            StringBuilder id = new StringBuilder();
-            while(true){
-                if (c != ','){
-                    id.append(c);
-                }
-                else {
-                    Optional<File> file = filesRepo.findById(Integer.valueOf(requestDetails.getFileIds()));
-                    if(file.isEmpty()){
-                        throw new RuntimeException("File with id : " + requestDetails.getFileIds() + " Not Found");
-                    }
-                    if (!fileTypeAndNormalization.contains(file.get().getType())){ // already took care of it in adding but just in case
-                        throw new RuntimeException("File type "+file.get().getType()+" Not supported");
-                    }
-                    try {
 
-                        fileIdAndGeneratedContent.put(id.toString(), openAiService.generateContent(requestDetails.getContext(), file.get().getPrompt(), fileTypeAndNormalization.get(file.get().getType())));
-                    }
-                    catch (RuntimeException e){
-                        throw new RuntimeException("Error in transaction");
-                    }
-                    }
+            if(c == ','){
+                     /*
+                    instead of making a making duplicated code alone for the case of multiple FileIds
+                    i thought why not using recursion and through it a new RequestDetails entity that have the invidual fileId
+                    of the stripped fileIds String and the recursion will see it as a one fileId
+                     */
+                fileIdAndGeneratedContent.put(id.toString(),generateFiles(new RequestDetails(id.toString(),requestDetails.getContext())));
+                id.delete(0,id.length()); // clearing the FileId for another entry
+            }
+            else {
+                id.append(c);
             }
 
-        }
+ //
+            }
+//        for (char c:requestDetails.getFileIds().toCharArray()) {
+//            StringBuilder id = new StringBuilder();
+//                if (c != ','){
+//                    id.append(c);
+//                }
+//                else {
+//                    Optional<File> file = filesRepo.findById(Integer.valueOf(requestDetails.getFileIds()));
+//                    if(file.isEmpty()){
+//                        throw new RuntimeException("File with id : " + requestDetails.getFileIds() + " Not Found");
+//                    }
+//                    if (!fileTypeAndNormalization.containsKey(file.get().getType())){ // already took care of it in adding but just in case
+//                        throw new RuntimeException("File type "+file.get().getType()+" Not supported");
+//                    }
+//                    try {
+//
+//                        fileIdAndGeneratedContent.put(id.toString(), openAiService.generateContent(requestDetails.getContext(), file.get().getPrompt(), fileTypeAndNormalization.get(file.get().getType())));
+//                    }
+//                    catch (RuntimeException e){
+//                        throw new RuntimeException("Error in transaction");
+//                    }
+//                    }
+//            }
+
                                 return ResponseEntity.accepted().body(fileIdAndGeneratedContent);
     }
 }
