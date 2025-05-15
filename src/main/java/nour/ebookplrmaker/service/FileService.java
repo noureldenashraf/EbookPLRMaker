@@ -97,26 +97,40 @@ public class FileService {
             if(file.isEmpty()){
                 throw new RuntimeException("File with id : " + requestDetails.getFileIds() + " Not Found");
             }
-            if (!fileTypeAndNormalization.contains(file.get().getType())){
-                throw new RuntimeException("File with id : " + file.get().getId() + " Not Found");
+            if (!fileTypeAndNormalization.contains(file.get().getType())){ // already took care of it in adding but just in case
+                throw new RuntimeException("File type "+file.get().getType()+" Not supported");
             }
                 return openAiService.generateContent(requestDetails.getContext(),file.get().getPrompt(),fileTypeAndNormalization.get(file.get().getType()));
         }
-        // else means that we will generate multiple ones
-//        while(true){
-//            for (char c:requestDetails.getFileIds().toCharArray()) {
-//                String fileId =
-//                if(c != ','){
-//                    continue;
-//                }
-//
-//            }
-//        }
-//
-//
-//        13,4,6,1
+ //        else means that we will generate multiple ones
+        //  using @hashTable to carry all the filesIds and there Generated content
+        Hashtable<String,ResponseEntity<?>> fileIdAndGeneratedContent = new Hashtable<>();
+        for (char c:requestDetails.getFileIds().toCharArray()) {
+            StringBuilder id = new StringBuilder();
+            while(true){
+                if (c != ','){
+                    id.append(c);
+                }
+                else {
+                    Optional<File> file = filesRepo.findById(Integer.valueOf(requestDetails.getFileIds()));
+                    if(file.isEmpty()){
+                        throw new RuntimeException("File with id : " + requestDetails.getFileIds() + " Not Found");
+                    }
+                    if (!fileTypeAndNormalization.contains(file.get().getType())){ // already took care of it in adding but just in case
+                        throw new RuntimeException("File type "+file.get().getType()+" Not supported");
+                    }
+                    try {
 
+                        fileIdAndGeneratedContent.put(id.toString(), openAiService.generateContent(requestDetails.getContext(), file.get().getPrompt(), fileTypeAndNormalization.get(file.get().getType())));
+                    }
+                    catch (RuntimeException e){
+                        throw new RuntimeException("Error in transaction");
+                    }
+                    }
+            }
 
+        }
+                                return ResponseEntity.accepted().body(fileIdAndGeneratedContent);
     }
 }
 // TODO : Normalize based on file type (done)
