@@ -1,10 +1,11 @@
 package nour.ebookplrmaker.controller;
 
+import jakarta.validation.Valid;
+import nour.ebookplrmaker.model.RequestDetails;
 import nour.ebookplrmaker.model.File;
 import nour.ebookplrmaker.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -58,9 +59,24 @@ public class FileController {
 
     @PostMapping("/api/files/generate")
     ResponseEntity<?> generateFiles
-     (
-
-    )
+    (
+    //        @RequestParam(required = false,name = "fileId") Optional<Integer> fileId,
+            @RequestBody(required = true) @Valid Optional<RequestDetails> requestDetails
+            )
+    {
+//        if (fileId.isPresent()){
+//                return fileService.generateFiles(fileId.get());
+//        }
+        /*
+        i may need to look at the Jakarta Validation it will make the code much simpler
+        but for now i will keep this till i find out more how it works TODO
+         */
+        if (requestDetails.isEmpty() || requestDetails.get().getFileIds().isEmpty() || requestDetails.get().getContext().isEmpty())
+        {
+            throw new RuntimeException("empty fileds in the request");
+        }
+            return fileService.generateFiles(requestDetails.get());
+    }
 
 
 }
