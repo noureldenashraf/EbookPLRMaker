@@ -127,9 +127,15 @@ public class FileService {
             else {
                 id.append(c);
             }
-
- //
             }
+        /*
+        We can remove the extra one here by optimizing
+        the forEach loop and converting it for .charAt(i)
+        and if == .length() do it
+        i will do it later
+        TODO
+         */
+        fileIdAndGeneratedContent.put(id.toString(),generateFiles(new RequestDetails(id.toString(),requestDetails.getContext())));
 //        for (char c:requestDetails.getFileIds().toCharArray()) {
 //            StringBuilder id = new StringBuilder();
 //                if (c != ','){

@@ -27,15 +27,19 @@ public class OpenAiService {
     public ResponseEntity<?> generateContent(String context, String prompt, String normalize) {
         try {
             /*
-            Geneartion logic as we use the @filePrompt(prompt) and @normalize
+            Generation logic as we use the @filePrompt(prompt) and @normalize
             as a system role in open Ai request
             and we use the @Context(the book) as the user message
              */
             String response = chatClient     // genaration logic as we use
                             .prompt(context)
                             .system(prompt+"/n"+normalize)
-                            .call().content();
-                    ;
+                    .call()
+                    .chatResponse()
+                    .getResult()
+                    .getOutput()
+                    .getText();
+            ;
             if(response.isEmpty()){
                 return ResponseEntity.internalServerError().body("Empty Response");
             }
