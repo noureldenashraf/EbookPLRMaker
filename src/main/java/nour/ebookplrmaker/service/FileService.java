@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 @Service						
@@ -101,12 +103,38 @@ public class FileService {
                 // already took care of it in adding but just in case
                 throw new RuntimeException("File type "+file.get().getType()+" Not supported");
             }
+            try {
 
-                return openAiService
+                java.io.File savedFile = new java.io.File("src/main/resources/static/"+new Date().getTime() + requestDetails.getFileIds() + "." + file.get().getType().toLowerCase());
+                FileWriter fileWriter = new FileWriter(savedFile, true);
+
+                String generatedContent = openAiService
                         .generateContent
-                                (
-                                 requestDetails.getContext(),file.get().getPrompt(),fileTypeAndNormalization.get(file.get().getType())
+                                (requestDetails.getContext()
+                                        ,file.get().getPrompt()
+                                        ,fileTypeAndNormalization.get(file.get().getType())
                                 );
+                if(generatedContent.isEmpty()){
+                    throw new RuntimeException("Content Couldn't be generated");
+                }
+                switch (file.get().getType()){
+                    case "DOCX":
+                        try {
+                            return DocxService.convertToDocx(generatedContent); // not implemented yet
+                            break;
+                        }
+                        catch (RuntimeException e){
+                            throw new RuntimeException("Error Converting to DOCX");
+                        }
+                    case "HTML","TXT":
+                        fileWriter.write(generatedContent);
+                        fileWriter.close();
+                }
+                return ResponseEntity.accepted().body(savedFile);
+            }
+            catch (RuntimeException | IOException e){
+                throw new RuntimeException("Can't create File");
+            }
         }
 
  //        else means that we will generate multiple ones
@@ -164,3 +192,4 @@ public class FileService {
 }
 // TODO : Normalize based on file type (done)
 // TODO : Get the context from docx or  (text is done)
+// TODO : look at the File creating logic and

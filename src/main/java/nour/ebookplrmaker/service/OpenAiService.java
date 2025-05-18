@@ -24,7 +24,7 @@ public class OpenAiService {
      ,normalize parameter is a specific string that contains the instructions for returning the response
      as we want for the specific file type we need,
      */
-    public ResponseEntity<?> generateContent(String context, String prompt, String normalize) {
+    public String generateContent(String context, String prompt, String normalize) {
         try {
             /*
             Generation logic as we use the @filePrompt(prompt) and @normalize
@@ -40,10 +40,10 @@ public class OpenAiService {
                     .getOutput()
                     .getText();
             ;
-            if(response.isEmpty()){
-                return ResponseEntity.internalServerError().body("Empty Response");
-            }
-            return ResponseEntity.accepted().body(response);
+//            if(response.isEmpty()){
+//                return ResponseEntity.internalServerError().body("Empty Response");
+//            }
+            return response;
         }
         catch (RuntimeException e){
             throw new RuntimeException("error Generating the file");
