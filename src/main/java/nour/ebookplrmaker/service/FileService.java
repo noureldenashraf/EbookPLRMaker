@@ -16,6 +16,7 @@ import java.util.*;
 public class FileService {
     private FilesRepository filesRepo;
     private OpenAiService openAiService;
+    private DocxService docxService;
     /*
     @FileTypes that are accepted in adding and generating and updating
     Add others if needed,
@@ -25,14 +26,15 @@ public class FileService {
     private final Hashtable<String,String> fileTypeAndNormalization= new Hashtable<>(Map.of
             ("HTML","Please return only the raw HTML code, without any additional text, explanation, or formatting or Markup language indicating the start and the end of the html code",
              "TXT","You are to respond in raw, unformatted plain text only. Do not use markdown, HTML, bullet points, numbered lists, headings, bold, italics, quotation marks, special symbols, or code blocks. Avoid all forms of formatting. Write as if you are typing in a plain Notepad editor. Do not include any symbols such as *, #, >, -, `, or < >. Your response must be pure plain text with no styling, no tags, no indentation, and no line prefixes. Do not wrap text in quotation marks or other delimiters. This rule applies to all outputs, regardless of content type.",
-             "DOCX","Return only the fully structured raw content formatted for direct DOCX generation, including clear headings and subheadings. Do not include any additional text, commentary, or formatting outside the document structure."
+             "DOCX","Return only the fully structured raw content formatted in valid, semantic HTML. Include clear headings (<h1>–<h3>), subheadings, paragraphs (<p>), and lists (<ul>, <ol>). Avoid CSS, JavaScript, or unsupported HTML features. Ensure all tags are well-formed and XHTML-compatible to ensure smooth DOCX conversion using tools like docx4j. Do not include any additional commentary or text outside the HTML content"
             )
     );
 
     @Autowired	
-    public FileService(FilesRepository filesRepository,OpenAiService openAiService) {
+    public FileService(FilesRepository filesRepository,OpenAiService openAiService,DocxService docxService) {
         this.filesRepo = filesRepository;
         this.openAiService = openAiService;
+        this.docxService = docxService;
     }
 
     public ResponseEntity<?> getAllFiles() {
@@ -70,7 +72,7 @@ public class FileService {
         if (newFile.getId() != 0) { // in case if the body is sent with ID
             newFile.setId(0);
         }
-        if (!fileTypeAndNormalization.contains(newFile.getType())){
+        if (!fileTypeAndNormalization.containsKey(newFile.getType())){
             throw new RuntimeException("This fileType is not Supported");
         }
         try {
@@ -93,47 +95,65 @@ public class FileService {
 
     }
 
-    public ResponseEntity<?> generateFiles(RequestDetails requestDetails) {
-        if(!requestDetails.getFileIds().contains(",")){ // in case we generate only one file aka: fileIds{23} it will not contain {,}
+    public ResponseEntity<?> generateFiles(RequestDetails requestDetails) throws IOException {
+        if(!requestDetails.getFileIds().contains(",")) { // in case we generate only one file aka: fileIds{23} it will not contain {,}
             Optional<File> file = filesRepo.findById(Integer.valueOf(requestDetails.getFileIds()));
-            if(file.isEmpty()){
+            if (file.isEmpty()) {
                 throw new RuntimeException("File with id : " + requestDetails.getFileIds() + " Not Found");
             }
-            if (!fileTypeAndNormalization.containsKey(file.get().getType())){ //TODO
+            if (!fileTypeAndNormalization.containsKey(file.get().getType())) { //TODO
                 // already took care of it in adding but just in case
-                throw new RuntimeException("File type "+file.get().getType()+" Not supported");
+                throw new RuntimeException("File type " + file.get().getType() + " Not supported");
             }
             try {
 
-                java.io.File savedFile = new java.io.File("src/main/resources/static/"+new Date().getTime() + requestDetails.getFileIds() + "." + file.get().getType().toLowerCase());
+                java.io.File savedFile = new java.io.File
+                        ("src/main/resources/static/"
+                                + new Date().getTime() // to make sure files have unique identifiers
+                                + file.get().getName()
+                                + requestDetails.getFileIds()
+                                + "." + file.get().getType().toLowerCase()); // .FileType
                 FileWriter fileWriter = new FileWriter(savedFile, true);
-
                 String generatedContent = openAiService
                         .generateContent
                                 (requestDetails.getContext()
-                                        ,file.get().getPrompt()
-                                        ,fileTypeAndNormalization.get(file.get().getType())
+                                        , file.get().getPrompt()
+                                        , fileTypeAndNormalization.get(file.get().getType())
                                 );
-                if(generatedContent.isEmpty()){
+                if (generatedContent.isEmpty()) {
                     throw new RuntimeException("Content Couldn't be generated");
                 }
-                switch (file.get().getType()){
+                /*
+                After Generating the content based on the file type we will handle it to save
+                the content to file,
+                however all the following cases will work great with no extra work but the DOCX
+                will need more work on it
+                 */
+                switch (file.get().getType()) { // file Type
                     case "DOCX":
                         try {
-                            return DocxService.convertToDocx(generatedContent); // not implemented yet
+                            fileWriter.close(); // we won't use it so why wasting memory
+                            savedFile = docxService.convertToDocx(savedFile,generatedContent); // non complex HTML ---> DOCX
                             break;
+                        } catch (Exception e){
+                            throw new RuntimeException(e);
                         }
-                        catch (RuntimeException e){
-                            throw new RuntimeException("Error Converting to DOCX");
-                        }
-                    case "HTML","TXT":
+                    case "HTML", "TXT":
                         fileWriter.write(generatedContent);
                         fileWriter.close();
+                        break;
+
+                    case null, default:
+                        throw new RuntimeException("File Type Not Supported");
+
                 }
                 return ResponseEntity.accepted().body(savedFile);
             }
-            catch (RuntimeException | IOException e){
-                throw new RuntimeException("Can't create File");
+            catch(RuntimeException e){
+                throw new RuntimeException(e.getMessage());
+            }
+            catch (IOException e){
+                throw new IOException(e.getMessage());
             }
         }
 
@@ -192,4 +212,4 @@ public class FileService {
 }
 // TODO : Normalize based on file type (done)
 // TODO : Get the context from docx or  (text is done)
-// TODO : look at the File creating logic and
+// TODO : look at the File creating logic

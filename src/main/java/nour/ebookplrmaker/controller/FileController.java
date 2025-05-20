@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.Optional;
 
 @RestController("/api/files")
@@ -62,8 +63,7 @@ public class FileController {
     (
     //        @RequestParam(required = false,name = "fileId") Optional<Integer> fileId,
             @RequestBody(required = true) @Valid Optional<RequestDetails> requestDetails
-            )
-    {
+            ) throws IOException {
 //        if (fileId.isPresent()){
 //                return fileService.generateFiles(fileId.get());
 //        }
