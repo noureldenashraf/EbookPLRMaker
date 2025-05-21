@@ -164,7 +164,7 @@ Each file type uses a standardized prompt format for consistent AI-generated con
 
 ## 🚧 Project Status
 
-- **Backend**: ✅ Complete — fully functional REST API, content generation, and file management.  
+- **Backend**: ✅ Most of the features are Complete however i'm still working on the rest of the features and fixing the bugs  
 - **Frontend**: ❌ Not implemented (planned for future development).  
 - **PDF Conversion**: ❌ Not supported yet.
 
